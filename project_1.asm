@@ -51,7 +51,6 @@ y:   ds 4
 cold_junc_temp:	ds 4
 bcd: ds 5
 VREF: ds 2
-mode:	 ds 1
 
 BSEG
 mf: dbit 1
@@ -61,11 +60,6 @@ $include(math32.inc)
 	$LIST
 
 Celsius_Unit_String:	db 0xDF, 'C', 0
-Celsius_Mode_String:	db 'Celsius\r\n', 0
-Kelvin_Unit_String:	db 'K ', 0
-Kelvin_Mode_String:	db 'Kelvin\r\n', 0
-Fahrenheit_Unit_String:	 db 0xDF, 'F', 0
-Fahrenheit_Mode_String:	 db 'Fahrenheit\r\n', 0
 	
 Init_All:
 	; Configure all the pins for bidirectional I/O
@@ -153,18 +147,7 @@ waitms:
 	ret
 
 display_units:
-	mov a, mode
-	jnz display_units_b
-	Send_Constant_String(#Kelvin_Unit_String)
-	sjmp display_units_ret
-display_units_b:
-	xrl a, #0x01
-	jnz display_units_c
 	Send_Constant_String(#Celsius_Unit_String)
-	sjmp display_units_ret
-display_units_c:
-	Send_Constant_String(#Fahrenheit_Unit_String)
-display_units_ret:
 	ret
 	
 ; We can display a number any way we want.  In this case with
@@ -197,60 +180,10 @@ Read_ADC:
     orl a, R0
     mov R0, A
 	ret
-
-send_mode:
-	jnz send_mode_b
-	mov DPTR, #Kelvin_Mode_String
-	lcall SendString
-	sjmp send_mode_ret
-send_mode_b:
-	xrl a, #0x01
-	jnz send_mode_c
-	mov DPTR, #Celsius_Mode_String
-	lcall SendString
-	sjmp send_mode_ret
-send_mode_c:
-	mov DPTR, #Fahrenheit_Mode_String
-	lcall SendString
-send_mode_ret:
-	ljmp cycle_mode_ret_b
 	
-cycle_mode:
-	mov a, mode
-	add a, #0x01
-	cjne a, #0x03, cycle_mode_ret
-	clr a
-cycle_mode_ret:
-	mov mode, a
-	ljmp send_mode
-cycle_mode_ret_b:	
-	ret
-
 convert_temp:
-	mov a, mode
-	jnz convert_temp_b
-	ljmp convert_temp_ret
-convert_temp_b:
 	load_y(27315) 	
 	lcall sub32
-	xrl a, #0x01
-	jnz convert_temp_c
-	ljmp convert_temp_ret
-convert_temp_c:
-	load_y(18)
-	lcall mul32
-	load_y(10)
-	lcall div32
-	load_y(3200)
-	lcall add32
-convert_temp_ret:
-	ret
-
-poll_for_mode_change:
-	jnb RI, poll_for_mode_change_ret
-	clr RI
-	lcall cycle_mode
-poll_for_mode_change_ret:
 	ret
 	
 main:
@@ -258,23 +191,12 @@ main:
 	lcall Init_All
 	lcall LCD_4BIT
 
-	mov mode, #0x01
-    
     ; initial messages in LCD
 	Set_Cursor(1, 1)
     Send_Constant_String(#temp_message)
 	Set_Cursor(2, 1)
     
 Forever:
-
-	jb MODE_BUTTON, Forever_b
-	Wait_Milli_Seconds(#10)
-	jb MODE_BUTTON, Forever_b
-	jnb MODE_BUTTON, $
-	lcall cycle_mode
-
-Forever_b:
-	lcall poll_for_mode_change
 	; Read the 2.08V LED voltage connected to AIN0 on pin 6
 	anl ADCCON0, #0xF0
 	orl ADCCON0, #0x00 ; Select channel 0
@@ -357,4 +279,3 @@ Forever_b:
 	
 	ljmp Forever
 END
-	
