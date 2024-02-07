@@ -126,13 +126,47 @@ SendStringDone:
     ret
 
 put_x:
-	mov a, x+3
+	clr a
+	mov a, #240
+	anl a, bcd+2
+	rr a
+	rr a
+	rr a
+	rr a
+	add a, #'0'
 	lcall putchar
-	mov a, x+2
+	clr a
+	mov a, #15
+	anl a, bcd+2
+	add a, #'0'
 	lcall putchar
-	mov a, x+1
+	clr a
+	mov a, #240
+	anl a, bcd+1
+	rr a
+	rr a
+	rr a
+	rr a
+	add a, #'0'
 	lcall putchar
-	mov a, x+0
+	clr a
+	mov a, #15
+	anl a, bcd+1
+	add a, #'0'
+	lcall putchar
+	clr a
+	mov a, #240
+	anl a, bcd+0
+	rr a
+	rr a
+	rr a
+	rr a
+	add a, #'0'
+	lcall putchar
+	clr a
+	mov a, #15
+	anl a, bcd+0
+	add a, #'0'
 	lcall putchar
 	mov a, #'\r'
 	lcall putchar
