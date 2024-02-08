@@ -28,9 +28,7 @@ TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 
 ORG 0x0000
 	ljmp main
-
-;                     1234567890123456    <- This helps determine the location of the counter
-
+	
 cseg
 ; These 'equ' must match the hardware wiring
 LCD_RS equ P1.3
@@ -62,7 +60,7 @@ state:	ds 1 			; 0 is stopped, 1 is heating, 2 is soaking, 3 is reflowing, 4 is 
 timer_secs:	ds 1
 timer_mins:	ds 1
 
-param:	ds 1 			; Determines which parameter is being edited
+param:	ds 1 			; Determines which parameter is being edited, in the order above
 	
 BSEG
 mf: dbit 1
@@ -77,6 +75,10 @@ $include(math32.inc)
 	$LIST
 
 Celsius_Unit_String:	db 0xDF, 'C ', 0
+Stop_State_String:	db 'ST ', 0
+Heating_State_String:	db 'HT ', 0
+Soaking_State_String:	db 'SK ', 0
+Reflow_State_String:	db 'RF', 0
 	
 Init_All:
 	; Configure all the pins for bidirectional I/O
@@ -252,6 +254,36 @@ Display_first_row:
 	lcall display_time
 	ret
 
+Display_second_row:
+	Set_Cursor(2, 1)
+	mov a, state
+	cjne a, #0x00, display_heating_state
+	Send_Constant_String(#Stop_State_String)
+	ljmp Display_second_row_b
+display_heating_state:
+	cjne a, #0x01, display_soaking_state
+	Send_Constant_String(#Heating_State_String)
+	ljmp Display_second_row_b
+display_soaking_state:
+	cjne a, #0x02, display_reflow_state
+	Send_Constant_String(#Soaking_State_String)
+	ljmp Display_second_row_b
+display_reflow_state:
+	Send_Constant_String(#Reflow_State_String)
+Display_second_row_b:
+	Display_char(#'1')
+	Display_BCD(soak_temp)
+	Display_char(#' ')
+	Display_BCD(soak_time)
+	Display_char(#' ')
+	Display_char(#'2')
+	Display_BCD(reflow_temp)
+	Display_char(#' ')
+	Display_BCD(reflow_time)
+	ret
+	
+	
+
 Read_ADC:
 	clr ADCF
 	setb ADCS ;  ADC start trigger signal
@@ -395,6 +427,7 @@ stopped_loop_d:
 	lcall toggle_start
 stopped_loop_e:	
 	lcall Read_Temp
+	lcall Display_second_row
 	ljmp check_state
 	
 Read_Temp:
