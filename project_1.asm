@@ -402,8 +402,13 @@ main:
 	lcall LCD_4BIT
 
 	mov timer_secs, #0
-	mov timer_mins, #0
+	mov timer_mins, #0 
 	mov state, #0
+
+	mov soak_temp, #60
+	mov soak_time, #70
+	mov reflow_temp, #220
+	mov reflow_time, #30
 
 check_state:
 	mov a, state
