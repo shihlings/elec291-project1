@@ -23,13 +23,14 @@ $LIST
 CLK               EQU 16600000 ; Microcontroller system frequency in Hz
 BAUD              EQU 115200 ; Baud rate of UART in bps
 TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
-TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
+	TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
+
 
 ORG 0x0000
 	ljmp main
 
 ;                     1234567890123456    <- This helps determine the location of the counter
-temp_message:     db 'Temperature:', 0
+
 cseg
 ; These 'equ' must match the hardware wiring
 LCD_RS equ P1.3
@@ -37,8 +38,7 @@ LCD_E  equ P1.4
 LCD_D4 equ P0.0
 LCD_D5 equ P0.1
 LCD_D6 equ P0.2
-	LCD_D7 equ P0.3
-MODE_BUTTON equ P1.5	
+LCD_D7 equ P0.3	
 
 $NOLIST
 $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
@@ -52,14 +52,31 @@ cold_junc_temp:	ds 4
 bcd: ds 5
 VREF: ds 2
 
+; Soldering parameters
+soak_temp:	ds 1
+soak_time:	ds 1
+reflow_temp:	ds 1
+reflow_time:	ds 1
+
+state:	ds 1 			; 0 is stopped, 1 is heating, 2 is soaking, 3 is reflowing, 4 is cooling 
+timer_secs:	ds 1
+timer_mins:	ds 1
+
+param:	ds 1 			; Determines which parameter is being edited
+	
 BSEG
 mf: dbit 1
+; Buttons are active low
+Select_button:	dbit 1
+Down_button:	dbit 1
+Up_button:	dbit 1
+Start_button:	dbit 1
 
 $NOLIST
 $include(math32.inc)
 	$LIST
 
-Celsius_Unit_String:	db 0xDF, 'C', 0
+Celsius_Unit_String:	db 0xDF, 'C ', 0
 	
 Init_All:
 	; Configure all the pins for bidirectional I/O
@@ -180,19 +197,59 @@ waitms:
 	djnz R2, waitms
 	ret
 
+read_pbs:
+	setb P1.5
+	setb Select_button
+	setb Down_button
+	setb Up_button
+	setb Start_button
+	setb P0.0
+	setb P0.1
+	setb P0.2
+	setb P0.3
+
+	clr P0.3
+	jb P1.5, check_up
+	clr Select_button
+check_up:
+	setb P0.3
+	clr P0.2
+	jb P1.5, check_down
+	clr Up_button
+check_down:
+	setb P0.2
+	clr P0.1
+	jb P1.5, check_start
+	clr Down_button
+check_start:
+	setb P0.1
+	clr P0.0
+	jb P1.5, read_pbs_ret
+	clr Start_button
+read_pbs_ret:
+	ret
+	
+	
 display_units:
 	Send_Constant_String(#Celsius_Unit_String)
+	ret
+
+display_time:
+	Display_BCD(timer_mins)
+	Display_char(#':')
+	Display_BCD(timer_secs)
 	ret
 	
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
-Display_formated_BCD:
-	Set_Cursor(2, 1)
+Display_first_row:
+	Set_Cursor(1, 1)
 	Display_BCD(bcd+2)
 	Display_BCD(bcd+1)
 	Display_char(#'.')
 	Display_BCD(bcd+0)
 	lcall display_units
+	lcall display_time
 	ret
 
 Read_ADC:
@@ -212,26 +269,136 @@ Read_ADC:
     pop acc
     anl a, #0xf0
     orl a, R0
-    mov R0, A
+    mov R0, A	
 	ret
 	
 convert_temp:
 	load_y(27315) 	
 	lcall sub32
 	ret
+
+cycle_param:
+	mov a, param
+	add a, #0x01
+	cjne a, #0x04, cycle_param_ret
+	clr a
+cycle_param_ret:
+	mov param, a
+	ret
+
+param_down:
+	mov a, param
+	cjne a, #0x00, soak_time_down
+	mov a, soak_temp
+	add a, #0x99
+	da a
+	mov soak_temp, a
+	ljmp param_down_ret
+soak_time_down:
+	cjne a, #0x01, reflow_temp_down
+	mov a, soak_time
+	add a, #0x99
+	da a
+	mov soak_time, a
+	ljmp param_down_ret
+reflow_temp_down:
+	cjne a, #0x02, reflow_time_down
+	mov a, reflow_temp
+	jnz reflow_temp_down_b
+	mov reflow_temp, #0x40
+	ljmp param_down_ret
+reflow_temp_down_b:	
+	add a, #0x99
+	da a
+	mov reflow_temp, a
+	ljmp param_down_ret
+reflow_time_down:
+	mov a, reflow_time
+	add a, #0x99
+	da a
+	mov reflow_time, a
+param_down_ret:
+	ret
+
+param_up:
+	mov a, param
+	cjne a, #0x00, soak_time_up
+	mov a, soak_temp
+	add a, #0x01
+	da a
+	mov soak_temp, a
+	ljmp param_up_ret
+soak_time_up:
+	cjne a, #0x01, reflow_temp_up
+	mov a, soak_time
+	add a, #0x01
+	da a
+	mov soak_time, a
+	ljmp param_up_ret
+reflow_temp_up:	
+	cjne a, #0x02, reflow_time_up
+	mov a, reflow_temp
+	jnz reflow_temp_up_b
+	mov reflow_temp, #0x40
+	ljmp param_up_ret
+reflow_temp_up_b:	
+	add a, #0x01
+	da a
+	mov reflow_temp, a
+	ljmp param_up_ret
+reflow_time_up:
+	mov a, reflow_time
+	add a, #0x01
+	da a
+	mov reflow_time, a
+param_up_ret:
+	ret
+
+toggle_start:
+	mov a, state
+	jz toggle_start_b
+	mov state, #0x00
+	ret
+toggle_start_b:
+	mov state, #0x01
+	ret
+	
 	
 main:
 	mov sp, #0x7f
 	lcall Init_All
 	lcall LCD_4BIT
 
-    ; initial messages in LCD
-	Set_Cursor(1, 1)
-    Send_Constant_String(#temp_message)
-	Set_Cursor(2, 1)
-    
-Forever:
-	; Read the 2.08V LED voltage connected to AIN0 on pin 6
+	mov timer_secs, #0
+	mov timer_mins, #0
+	mov state, #0
+
+check_state:
+	mov a, state
+	cjne a, #0x00, check_state_b
+	ljmp stopped_loop
+check_state_b:
+	sjmp check_state
+
+stopped_loop:
+	lcall read_pbs
+	jb Select_button, stopped_loop_b
+	lcall cycle_param
+stopped_loop_b:
+	jb Down_button, stopped_loop_c
+	lcall param_down
+stopped_loop_c:
+	jb Up_button, stopped_loop_d
+	lcall param_up
+stopped_loop_d:
+	jb Start_button, stopped_loop_e
+	lcall toggle_start
+stopped_loop_e:	
+	lcall Read_Temp
+	ljmp check_state
+	
+Read_Temp:
+	; Read the 4.096V voltage reference connected to AIN0 on pin 6
 	anl ADCCON0, #0xF0
 	orl ADCCON0, #0x00 ; Select channel 0
 
@@ -251,7 +418,7 @@ Forever:
 	; Pad other bits with zero
 	mov x+2, #0
 	mov x+3, #0
-	Load_y(41132) ; The MEASURED LED voltage: 2.074V, with 4 decimal places
+	Load_y(41132) ; The MEASURED reference voltage 4.1132V, with 4 decimal places
 	lcall mul32
 	; Retrive the ADC LED value
 	mov y+0, VREF+0
@@ -301,7 +468,7 @@ Forever:
 
 	; Convert to BCD and display
 	lcall hex2bcd
-	lcall Display_formated_BCD
+	lcall Display_first_row
 
 	lcall put_x
 	
@@ -311,5 +478,5 @@ Forever:
 	mov R2, #250
 	lcall waitms
 	
-	ljmp Forever
+	ret
 END
