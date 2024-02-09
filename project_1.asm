@@ -25,10 +25,16 @@ BAUD              EQU 115200 ; Baud rate of UART in bps
 TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 	TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
 
+	TIMER2_RATE   EQU 500     ; 500Hz, for a timer tick of 2ms
+TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
+
 
 ORG 0x0000
 	ljmp main
-	
+
+ORG 0x002B
+	ljmp Timer2_ISR
+		
 cseg
 ; These 'equ' must match the hardware wiring
 LCD_RS equ P1.3
@@ -56,7 +62,8 @@ soak_time:	ds 1
 reflow_temp:	ds 1
 reflow_time:	ds 1
 
-state:	ds 1 			; 0 is stopped, 1 is heating, 2 is soaking, 3 is reflowing, 4 is cooling 
+state:	ds 1 			; 0 is stopped, 1 is heating, 2 is soaking, 3 is reflowing, 4 is cooling
+count_2ms:	ds 1
 timer_secs:	ds 1
 timer_mins:	ds 1
 
@@ -64,6 +71,9 @@ param:	ds 1 			; Determines which parameter is being edited, in the order above
 	
 BSEG
 mf: dbit 1
+
+half_seconds_flag:	dbit 1
+	
 ; Buttons are active low
 Select_button:	dbit 1
 Down_button:	dbit 1
@@ -79,6 +89,51 @@ Stop_State_String:	db 'ST ', 0
 Heating_State_String:	db 'HT ', 0
 Soaking_State_String:	db 'SK ', 0
 Reflow_State_String:	db 'RF', 0
+
+Timer2_ISR:
+	clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
+	
+	; The two registers used in the ISR must be saved in the stack
+	push acc
+	push psw
+	
+	; Increment the two millisecond counter
+	inc count_2ms
+
+Inc_Done:
+	; Check if half a second has passed
+	mov a, count_2ms
+	cjne a, #250, Timer2_ISR_done
+	lcall Read_Temp
+	
+				; 500 milliseconds have passed.
+	jb half_seconds_flag, Inc_Seconds
+	setb half_seconds_flag
+	clr a
+	mov count_2ms, a
+	sjmp Timer2_ISR_done
+Inc_Seconds:
+	mov a, timer_secs
+	add a, #0x01
+	da a
+	xrl a, #0x60
+	jz Inc_Minutes
+	xrl a, #0x60
+	mov timer_secs, a
+	clr half_seconds_flag
+	sjmp Timer2_ISR_done
+Inc_Minutes:
+	clr a
+	clr half_seconds_flag
+	mov timer_secs, a
+	mov a, timer_mins
+	add a, #0x01
+	da a
+	mov timer_mins, a
+Timer2_ISR_Done:
+	pop psw
+	pop acc
+	reti
 	
 Init_All:
 	; Configure all the pins for bidirectional I/O
@@ -103,6 +158,20 @@ Init_All:
 	orl	CKCON,#0x08 ; CLK is the input for timer 0
 	anl	TMOD,#0xF0 ; Clear the configuration bits for timer 0
 	orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
+
+				; Using timer 2 for keeping time.
+	mov T2CON, #0
+	mov TH2, #high(TIMER2_RELOAD)
+	mov TL2, #low(TIMER2_RELOAD)
+
+	orl T2MOD, #0x80
+	mov RCMP2H, #high(TIMER2_RELOAD)
+	mov RCMP2L, #low(TIMER2_RELOAD)
+	; Init two millisecond interrupt counter.
+	clr a
+	mov count_2ms, a
+	; Enable the timer and interrupts
+	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
 	
 	; Initialize the pins used by the ADC (P1.1, P1.7) as input.
 	orl	P1M1, #0b10000010
@@ -115,6 +184,8 @@ Init_All:
 	mov AINDIDS, #0x00 ; Disable all analog inputs
 	orl AINDIDS, #0b10000011 ; Activate AIN0 and AIN7 analog inputs
 	orl ADCCON1, #0x01 ; Enable ADC
+
+	setb EA
 	
 	ret
 	
@@ -212,21 +283,25 @@ read_pbs:
 
 	clr P0.3
 	jb P1.5, check_up
+	jnb P1.5, $
 	clr Select_button
 check_up:
 	setb P0.3
-	clr P0.2
+	clr P0.1
 	jb P1.5, check_down
+	jnb P1.5, $
 	clr Up_button
 check_down:
-	setb P0.2
-	clr P0.1
+	setb P0.1
+	clr P0.2
 	jb P1.5, check_start
+	jnb P1.5, $
 	clr Down_button
 check_start:
 	setb P0.1
 	clr P0.0
 	jb P1.5, read_pbs_ret
+	jnb P1.5, $
 	clr Start_button
 read_pbs_ret:
 	ret
@@ -405,10 +480,16 @@ main:
 	mov timer_mins, #0 
 	mov state, #0
 
-	mov soak_temp, #60
-	mov soak_time, #70
-	mov reflow_temp, #220
-	mov reflow_time, #30
+	mov soak_temp, #0x60
+	mov soak_time, #0x70
+	mov reflow_temp, #0x20
+	mov reflow_time, #0x30
+
+	clr half_seconds_flag
+	mov count_2ms, #0
+
+	setb TR2
+	
 
 check_state:
 	mov a, state
@@ -430,8 +511,8 @@ stopped_loop_c:
 stopped_loop_d:
 	jb Start_button, stopped_loop_e
 	lcall toggle_start
-stopped_loop_e:	
-	lcall Read_Temp
+stopped_loop_e:
+	lcall Display_first_row
 	lcall Display_second_row
 	ljmp check_state
 	
@@ -506,15 +587,8 @@ Read_Temp:
 
 	; Convert to BCD and display
 	lcall hex2bcd
-	lcall Display_first_row
 
 	lcall put_x
-	
-	; Wait 500 ms between conversions
-	mov R2, #250
-	lcall waitms
-	mov R2, #250
-	lcall waitms
 	
 	ret
 END
