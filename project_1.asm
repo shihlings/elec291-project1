@@ -25,8 +25,8 @@ BAUD              EQU 115200 ; Baud rate of UART in bps
 TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 	TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
 
-	TIMER2_RATE   EQU 500     ; 500Hz, for a timer tick of 2ms
-TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
+	TIMER2_RATE   EQU 100     ; 100Hz, for a timer tick of 10ms
+TIMER2_RELOAD EQU ((65536-(CLK/(TIMER2_RATE*16))))
 
 
 ORG 0x0000
@@ -63,16 +63,17 @@ reflow_temp:	ds 1
 reflow_time:	ds 1
 
 state:	ds 1 			; 0 is stopped, 1 is heating, 2 is soaking, 3 is reflowing, 4 is cooling
-count_2ms:	ds 1
+count_10ms:	ds 1
 timer_secs:	ds 1
 timer_mins:	ds 1
 
+pwm_counter:	ds 1
+pwm:	ds 1
+	
 param:	ds 1 			; Determines which parameter is being edited, in the order above
 	
 BSEG
 mf: dbit 1
-
-half_seconds_flag:	dbit 1
 	
 ; Buttons are active low
 Select_button:	dbit 1
@@ -96,22 +97,20 @@ Timer2_ISR:
 	; The two registers used in the ISR must be saved in the stack
 	push acc
 	push psw
-	
-	; Increment the two millisecond counter
-	inc count_2ms
 
-Inc_Done:
-	; Check if half a second has passed
-	mov a, count_2ms
-	cjne a, #250, Timer2_ISR_done
+	inc pwm_counter
+	clr c
+	mov a, pwm
+	subb a, pwm_counter ; If pwm_counter <= pwm then c=1
+	cpl c
+		;	mov PWM_OUT, c
+	mov a, pwm_counter
+	cjne a, #100, Timer2_ISR_done
+	mov pwm_counter, #0
+
+	
 	lcall Read_Temp
 	
-				; 500 milliseconds have passed.
-	jb half_seconds_flag, Inc_Seconds
-	setb half_seconds_flag
-	clr a
-	mov count_2ms, a
-	sjmp Timer2_ISR_done
 Inc_Seconds:
 	mov a, timer_secs
 	add a, #0x01
@@ -120,11 +119,9 @@ Inc_Seconds:
 	jz Inc_Minutes
 	xrl a, #0x60
 	mov timer_secs, a
-	clr half_seconds_flag
 	sjmp Timer2_ISR_done
 Inc_Minutes:
 	clr a
-	clr half_seconds_flag
 	mov timer_secs, a
 	mov a, timer_mins
 	add a, #0x01
@@ -164,12 +161,13 @@ Init_All:
 	mov TH2, #high(TIMER2_RELOAD)
 	mov TL2, #low(TIMER2_RELOAD)
 
-	orl T2MOD, #0x80
+	orl T2MOD, #0b1010_0000
 	mov RCMP2H, #high(TIMER2_RELOAD)
 	mov RCMP2L, #low(TIMER2_RELOAD)
+	mov pwm_counter, #0
 	; Init two millisecond interrupt counter.
 	clr a
-	mov count_2ms, a
+	mov count_10ms, a
 	; Enable the timer and interrupts
 	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
 	
@@ -445,10 +443,12 @@ soak_time_up:
 reflow_temp_up:	
 	cjne a, #0x02, reflow_time_up
 	mov a, reflow_temp
+	xrl a, #0x40
 	jnz reflow_temp_up_b
-	mov reflow_temp, #0x40
+	mov reflow_temp, #0x00
 	ljmp param_up_ret
-reflow_temp_up_b:	
+reflow_temp_up_b:
+	xrl a, #0x40
 	add a, #0x01
 	da a
 	mov reflow_temp, a
@@ -485,8 +485,9 @@ main:
 	mov reflow_temp, #0x20
 	mov reflow_time, #0x30
 
-	clr half_seconds_flag
-	mov count_2ms, #0
+	mov pwm, #0
+	mov pwm_counter, #0
+	mov count_10ms, #0
 
 	setb TR2
 	
