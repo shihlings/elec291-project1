@@ -42,7 +42,8 @@ LCD_E  equ P1.4
 LCD_D4 equ P0.0
 LCD_D5 equ P0.1
 LCD_D6 equ P0.2
-LCD_D7 equ P0.3	
+	LCD_D7 equ P0.3
+	PWM_OUT equ P1.0
 
 $NOLIST
 $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
@@ -51,9 +52,11 @@ $LIST
 ; These register definitions needed by 'math32.inc'
 DSEG at 30H
 x:   ds 4
+x_backup:	ds 4
 y:   ds 4
 cold_junc_temp:	ds 4
 bcd: ds 5
+bcd_backup:	ds 5
 VREF: ds 2
 
 ; Soldering parameters
@@ -63,7 +66,7 @@ reflow_temp:	ds 1
 reflow_time:	ds 1
 
 state:	ds 1 			; 0 is stopped, 1 is heating, 2 is soaking, 3 is reflowing, 4 is cooling
-count_10ms:	ds 1
+state_secs:	ds 1
 timer_secs:	ds 1
 timer_mins:	ds 1
 
@@ -80,6 +83,7 @@ Select_button:	dbit 1
 Down_button:	dbit 1
 Up_button:	dbit 1
 Start_button:	dbit 1
+Second_heating:	dbit 1
 
 $NOLIST
 $include(math32.inc)
@@ -89,7 +93,8 @@ Celsius_Unit_String:	db 0xDF, 'C ', 0
 Stop_State_String:	db 'ST ', 0
 Heating_State_String:	db 'HT ', 0
 Soaking_State_String:	db 'SK ', 0
-Reflow_State_String:	db 'RF', 0
+Reflow_State_String:	db 'RF ', 0
+Cooling_State_String:	db 'CL ', 0
 
 Timer2_ISR:
 	clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
@@ -103,13 +108,21 @@ Timer2_ISR:
 	mov a, pwm
 	subb a, pwm_counter ; If pwm_counter <= pwm then c=1
 	cpl c
-		;	mov PWM_OUT, c
+	mov PWM_OUT, c
 	mov a, pwm_counter
 	cjne a, #100, Timer2_ISR_done
 	mov pwm_counter, #0
 
-	
 	lcall Read_Temp
+
+	mov a, state
+
+	mov a, state_secs
+	add a, #0x01
+	da a
+	mov state_secs, a
+
+	jz Timer2_ISR_Done
 	
 Inc_Seconds:
 	mov a, timer_secs
@@ -167,7 +180,6 @@ Init_All:
 	mov pwm_counter, #0
 	; Init two millisecond interrupt counter.
 	clr a
-	mov count_10ms, a
 	; Enable the timer and interrupts
 	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
 	
@@ -214,47 +226,23 @@ SendStringDone:
     ret
 
 put_x:
-	clr a
-	mov a, #240
-	anl a, bcd+2
-	rr a
-	rr a
-	rr a
-	rr a
-	add a, #'0'
+	mov a, x+3
 	lcall putchar
-	clr a
-	mov a, #15
-	anl a, bcd+2
-	add a, #'0'
+	mov a, x+2
 	lcall putchar
-	clr a
-	mov a, #240
-	anl a, bcd+1
-	rr a
-	rr a
-	rr a
-	rr a
-	add a, #'0'
+	mov a, x+1
 	lcall putchar
-	clr a
-	mov a, #15
-	anl a, bcd+1
-	add a, #'0'
+	mov a, x+0
 	lcall putchar
-	clr a
-	mov a, #240
-	anl a, bcd+0
-	rr a
-	rr a
-	rr a
-	rr a
-	add a, #'0'
+	mov a, soak_temp
 	lcall putchar
-	clr a
-	mov a, #15
-	anl a, bcd+0
-	add a, #'0'
+	mov a, soak_time
+	lcall putchar
+	mov a, reflow_temp
+	lcall putchar
+	mov a, reflow_time
+	lcall putchar
+	mov a, state
 	lcall putchar
 	mov a, #'\r'
 	lcall putchar
@@ -314,6 +302,36 @@ display_time:
 	Display_char(#':')
 	Display_BCD(timer_secs)
 	ret
+
+pop_x:
+	mov x+0, x_backup+0
+	mov x+1, x_backup+1
+	mov x+2, x_backup+2
+	mov x+3, x_backup+3
+	ret
+
+push_x:
+	mov x_backup+0, x+0
+	mov x_backup+1, x+1
+	mov x_backup+2, x+2
+	mov x_backup+3, x+3
+	ret
+	
+pop_BCD:
+	mov bcd+0, bcd_backup+0
+	mov bcd+1, bcd_backup+1
+	mov bcd+2, bcd_backup+2
+	mov bcd+3, bcd_backup+3
+	mov bcd+4, bcd_backup+4
+	ret
+
+push_BCD:
+	mov bcd_backup+0, bcd+0
+	mov bcd_backup+1, bcd+1
+	mov bcd_backup+2, bcd+2
+	mov bcd_backup+3, bcd+3
+	mov bcd_backup+4, bcd+4
+	ret
 	
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
@@ -342,7 +360,11 @@ display_soaking_state:
 	Send_Constant_String(#Soaking_State_String)
 	ljmp Display_second_row_b
 display_reflow_state:
+	cjne a, #0x03, display_cooling_state
 	Send_Constant_String(#Reflow_State_String)
+	ljmp Display_second_row_b
+display_cooling_state:
+	Send_Constant_String(#Cooling_State_String)
 Display_second_row_b:
 	Display_char(#'1')
 	Display_BCD(soak_temp)
@@ -385,7 +407,7 @@ convert_temp:
 cycle_param:
 	mov a, param
 	add a, #0x01
-	cjne a, #0x04, cycle_param_ret
+	cjne a, #0x03, cycle_param_ret
 	clr a
 cycle_param_ret:
 	mov param, a
@@ -485,9 +507,12 @@ main:
 	mov reflow_temp, #0x20
 	mov reflow_time, #0x30
 
+	mov param, #0x00
+
+	clr Second_heating
+
 	mov pwm, #0
 	mov pwm_counter, #0
-	mov count_10ms, #0
 
 	setb TR2
 	
@@ -497,9 +522,21 @@ check_state:
 	cjne a, #0x00, check_state_b
 	ljmp stopped_loop
 check_state_b:
-	sjmp check_state
+	cjne a, #0x01, check_state_c
+	ljmp heating_loop
+check_state_c:
+	cjne a, #0x02, check_state_d
+	ljmp soaking_loop
+check_state_d:
+	cjne a, #0x03, check_state_e
+	ljmp reflow_loop
+check_state_e:
+	ljmp cooling_loop
 
 stopped_loop:
+	mov timer_secs, #0x00
+	mov timer_mins, #0x00
+	mov pwm, #0
 	lcall read_pbs
 	jb Select_button, stopped_loop_b
 	lcall cycle_param
@@ -511,8 +548,122 @@ stopped_loop_c:
 	lcall param_up
 stopped_loop_d:
 	jb Start_button, stopped_loop_e
+	mov state_secs, #0x00
 	lcall toggle_start
 stopped_loop_e:
+	lcall Display_first_row
+	lcall Display_second_row
+	ljmp check_state
+
+heating_loop:
+	mov pwm, #100
+	lcall read_pbs
+	jb Start_button, heating_loop_b
+	lcall toggle_start
+heating_loop_b:
+	mov a, state_secs
+	cjne a, #0x60, heating_loop_c
+	clr TR2
+	lcall pop_x
+	load_y(100)
+	lcall div32
+	clr a
+	mov a, x
+	clr c
+	subb a, #50
+	setb TR2
+	jnc heating_loop_g
+	lcall toggle_start 
+heating_loop_c:
+	clr TR2
+	load_y(100)
+	lcall pop_x
+	lcall div32
+	clr a
+	mov a, x
+	lcall push_BCD
+	jb Second_heating, heating_loop_d
+	load_x(100)
+	lcall hex2bcd
+	mov bcd+0, soak_temp
+	sjmp heating_loop_e
+heating_loop_d:
+	load_x(200)
+	lcall hex2bcd
+	mov bcd+0, reflow_temp
+heating_loop_e:	
+	lcall bcd2hex
+	lcall pop_BCD
+	clr c
+	subb a, x
+	setb TR2
+	jc heating_loop_g
+	mov state_secs, #0x00
+	jb Second_heating, heating_loop_f
+	mov state, #0x02
+	sjmp heating_loop_g
+heating_loop_f:
+	mov state, #0x03
+heating_loop_g:
+	lcall Display_first_row
+	lcall Display_second_row
+	ljmp check_state
+
+soaking_loop:
+	mov pwm, #0
+	lcall read_pbs
+	jb Start_button, soaking_loop_b
+	lcall toggle_start
+soaking_loop_b:
+	mov a, state_secs
+	xrl a, soak_time
+	jnz soaking_loop_c
+	setb Second_heating
+	mov state, #0x01
+soaking_loop_c:	
+	lcall Display_first_row
+	lcall Display_second_row
+	ljmp check_state
+
+reflow_loop:
+	mov pwm, #20
+	lcall read_pbs
+	jb Start_button, reflow_loop_b
+	lcall toggle_start
+reflow_loop_b:
+	mov a, state_secs
+	xrl a, reflow_time
+	jnz reflow_loop_c
+	mov state, #0x04
+reflow_loop_c:
+	lcall Display_first_row
+	lcall Display_second_row
+	ljmp check_state
+
+cooling_loop:
+	mov pwm, #0
+	lcall read_pbs
+	jb Start_button, cooling_loop_b
+	lcall toggle_start
+cooling_loop_b:
+	clr TR2
+	load_y(100)
+	lcall pop_x
+	lcall div32
+	clr a
+	mov a, x
+	lcall push_BCD
+	load_x(0)
+	lcall hex2bcd
+	mov bcd+0, #0x60
+	lcall bcd2hex
+	lcall pop_BCD
+	clr c
+	subb a, x
+	setb TR2
+	jnc cooling_loop_c
+	mov state, #0x00
+cooling_loop_c:
 	lcall Display_first_row
 	lcall Display_second_row
 	ljmp check_state
@@ -590,6 +741,7 @@ Read_Temp:
 	lcall hex2bcd
 
 	lcall put_x
+	lcall push_x
 	
 	ret
 END
