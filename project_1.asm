@@ -24,13 +24,16 @@ CLK               EQU 16600000 ; Microcontroller system frequency in Hz
 BAUD              EQU 115200 ; Baud rate of UART in bps
 TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 	TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
-
+TIMER0_RATE EQU 4096
+TIMER0_RELOAD EQU ((65536-(CLK/(TIMER0_RATE))))
 	TIMER2_RATE   EQU 100     ; 100Hz, for a timer tick of 10ms
 TIMER2_RELOAD EQU ((65536-(CLK/(TIMER2_RATE*16))))
 
 
 ORG 0x0000
 	ljmp main
+org 0x000B
+    ljmp Timer0_ISR
 
 ORG 0x002B
 	ljmp Timer2_ISR
@@ -70,6 +73,12 @@ state_secs:	ds 1
 timer_secs:	ds 1
 timer_mins:	ds 1
 
+;sound flag:
+soundflag: ds 1
+
+; 3s timer flag
+3s_timer: ds 1
+
 pwm_counter:	ds 1
 pwm:	ds 1
 	
@@ -95,6 +104,21 @@ Heating_State_String:	db 'HT ', 0
 Soaking_State_String:	db 'SK ', 0
 Reflow_State_String:	db 'RF ', 0
 Cooling_State_String:	db 'CL ', 0
+
+Timer0_ISR:
+    clr TIMER0_RELOAD
+    clr TR0
+    mov TH0, #high(TIMER0_RELOAD)    
+    mov TL0, #low(TIMER0_RELOAD)
+    setb TR0
+    jnb soundflag, Timer0_ISR_done
+    djnz 3s_timer, buzzer
+
+buzzer:
+    cpl SOUND_OUT ; connect soundout to a pin pls
+
+Timer0_ISR_done: 
+    reti
 
 Timer2_ISR:
 	clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
@@ -154,6 +178,17 @@ Init_All:
 	mov	P0M1, #0x00
 	mov	P0M2, #0x00
 	
+    orl CKCON, #0b00001000
+    mov a, TMOD
+    anl a, #0xf0
+    orl a, #0x01
+    mov TMOD, a
+    mov TH0, #high(TIMER0_RELOAD)
+    mov TL0, #low(TIMER0_RELOAD)
+
+    setb ET0
+    setb TR0
+
 	orl	CKCON, #0x10 ; CLK is the input for timer 1
 	orl	PCON, #0x80 ; Bit SMOD=1, double baud rate
 	mov	SCON, #0x52
@@ -164,10 +199,10 @@ Init_All:
 	setb TR1
 	
 	; Using timer 0 for delay functions.  Initialize here:
-	clr	TR0 ; Stop timer 0
-	orl	CKCON,#0x08 ; CLK is the input for timer 0
-	anl	TMOD,#0xF0 ; Clear the configuration bits for timer 0
-	orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
+	;clr	TR0 ; Stop timer 0
+	;orl	CKCON,#0x08 ; CLK is the input for timer 0
+	;anl	TMOD,#0xF0 ; Clear the configuration bits for timer 0
+	;orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
 
 				; Using timer 2 for keeping time.
 	mov T2CON, #0
@@ -485,6 +520,8 @@ param_up_ret:
 
 toggle_start:
 	; State changes here - Turn on buzzer
+    mov 3s_timer, #0x03
+    setb soundflag
 	mov a, state
 	jz toggle_start_b
 	mov state, #0x00
@@ -496,9 +533,11 @@ toggle_start_b:
 	
 main:
 	mov sp, #0x7f
+    
 	lcall Init_All
 	lcall LCD_4BIT
 
+    mov 3s_timer, #0
 	mov timer_secs, #0
 	mov timer_mins, #0 
 	mov state, #0
@@ -541,7 +580,7 @@ stopped_loop:
 	lcall read_pbs
 	jb Select_button, stopped_loop_b
 	lcall cycle_param
-stopped_loop_b:
+stopped_loop_b:    
 	jb Down_button, stopped_loop_c
 	lcall param_down
 stopped_loop_c:
@@ -600,6 +639,8 @@ heating_loop_e:
 	setb TR2
 	jc heating_loop_g
 	; State changes here - turn on buzzer
+     mov 3s_timer, #0x03
+    setb soundflag
 	mov state_secs, #0x00
 	jb Second_heating, heating_loop_f
 	mov state, #0x02
@@ -621,6 +662,8 @@ soaking_loop_b:
 	xrl a, soak_time
 	jnz soaking_loop_c
 	; State changes here - turn on buzzer
+    mov 3s_timer, #0x03
+    setb soundflag
 	setb Second_heating
 	mov state, #0x01
 soaking_loop_c:	
@@ -638,6 +681,8 @@ reflow_loop_b:
 	xrl a, reflow_time
 	jnz reflow_loop_c
 	; State changes here- turn on buzzer
+    mov 3s_timer, #0x03
+    setb soundflag
 	mov state, #0x04
 reflow_loop_c:
 	lcall Display_first_row
