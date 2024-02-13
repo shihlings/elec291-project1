@@ -1,19 +1,24 @@
 <deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
   <configuration file="D:\git\elec291-project1\ELEC_291_Project_1_Reflow_Oven_Controller.prj" location="D:\git\elec291-project1" name="ELEC_291_Project_1_Reflow_Oven_Controller" target="target.ezdeploy.standalone" target-name="Application Compiler">
     <param.appname>ELEC_291_Project_1_Reflow_Oven_Controller</param.appname>
-    <param.icon />
-    <param.icons />
+    <param.icon>${PROJECT_ROOT}\ELEC_291_Project_1_Reflow_Oven_Controller_resources\icon.ico</param.icon>
+    <param.icons>
+      <file>${PROJECT_ROOT}\ELEC_291_Project_1_Reflow_Oven_Controller_resources\icon_48.png</file>
+      <file>${PROJECT_ROOT}\ELEC_291_Project_1_Reflow_Oven_Controller_resources\icon_32.png</file>
+      <file>${PROJECT_ROOT}\ELEC_291_Project_1_Reflow_Oven_Controller_resources\icon_24.png</file>
+      <file>${PROJECT_ROOT}\ELEC_291_Project_1_Reflow_Oven_Controller_resources\icon_16.png</file>
+    </param.icons>
     <param.version>1.0</param.version>
     <param.authnamewatermark>ELEC 291 Group B7</param.authnamewatermark>
     <param.email />
     <param.company />
     <param.summary />
     <param.description />
-    <param.screenshot />
+    <param.screenshot>C:\Users\sllsh\Downloads\logo_ece-505x314.png</param.screenshot>
     <param.guid />
     <param.installpath.string>\ELEC_291_Project_1_Reflow_Oven_Controller\</param.installpath.string>
     <param.installpath.combo>option.installpath.programfiles</param.installpath.combo>
-    <param.logo />
+    <param.logo>C:\Users\sllsh\Downloads\logo_ece-505x314.png</param.logo>
     <param.install.notes />
     <param.target.install.notes />
     <param.intermediate>${PROJECT_ROOT}\ELEC_291_Project_1_Reflow_Oven_Controller\for_testing</param.intermediate>
@@ -43,18 +48,14 @@
 	 -?  print help on how to use the application 
 	 input arguments</param.help.text>
     <unset>
-      <param.icon />
-      <param.icons />
       <param.version />
       <param.email />
       <param.company />
       <param.summary />
       <param.description />
-      <param.screenshot />
       <param.guid />
       <param.installpath.string />
       <param.installpath.combo />
-      <param.logo />
       <param.install.notes />
       <param.target.install.notes />
       <param.intermediate />
