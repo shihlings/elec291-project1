@@ -47,6 +47,7 @@ LCD_D5 equ P0.1
 LCD_D6 equ P0.2
 	LCD_D7 equ P0.3
 	PWM_OUT equ P1.0
+	SOUND_OUT equ P1.6
 
 $NOLIST
 $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
@@ -73,11 +74,8 @@ state_secs:	ds 1
 timer_secs:	ds 1
 timer_mins:	ds 1
 
-;sound flag:
-soundflag: ds 1
-
 ; 3s timer flag
-3s_timer: ds 1
+timer_3s: ds 1
 
 pwm_counter:	ds 1
 pwm:	ds 1
@@ -86,6 +84,8 @@ param:	ds 1 			; Determines which parameter is being edited, in the order above
 	
 BSEG
 mf: dbit 1
+
+soundflag: dbit 1
 	
 ; Buttons are active low
 Select_button:	dbit 1
@@ -106,18 +106,11 @@ Reflow_State_String:	db 'RF ', 0
 Cooling_State_String:	db 'CL ', 0
 
 Timer0_ISR:
-    clr TIMER0_RELOAD
     clr TR0
     mov TH0, #high(TIMER0_RELOAD)    
     mov TL0, #low(TIMER0_RELOAD)
-    setb TR0
-    jnb soundflag, Timer0_ISR_done
-    djnz 3s_timer, buzzer
-
-buzzer:
-    cpl SOUND_OUT ; connect soundout to a pin pls
-
-Timer0_ISR_done: 
+	cpl SOUND_OUT ; connect soundout to a pin pls
+	setb TR0
     reti
 
 Timer2_ISR:
@@ -137,6 +130,15 @@ Timer2_ISR:
 	cjne a, #100, Timer2_ISR_done
 	mov pwm_counter, #0
 
+	jnb soundflag, Timer2_ISR_b
+	mov a, timer_3s
+	subb a, #0x01
+	mov timer_3s, a
+	jnz Timer2_ISR_b
+	clr soundflag
+	clr TR0
+
+Timer2_ISR_b:	
 	lcall Read_Temp
 
 	mov a, state
@@ -145,7 +147,6 @@ Timer2_ISR:
 	add a, #0x01
 	da a
 	mov state_secs, a
-
 	jz Timer2_ISR_Done
 	
 Inc_Seconds:
@@ -187,7 +188,7 @@ Init_All:
     mov TL0, #low(TIMER0_RELOAD)
 
     setb ET0
-    setb TR0
+    clr TR0
 
 	orl	CKCON, #0x10 ; CLK is the input for timer 1
 	orl	PCON, #0x80 ; Bit SMOD=1, double baud rate
@@ -520,8 +521,9 @@ param_up_ret:
 
 toggle_start:
 	; State changes here - Turn on buzzer
-    mov 3s_timer, #0x03
-    setb soundflag
+    mov timer_3s, #0x03
+	setb soundflag
+	setb TR0
 	mov a, state
 	jz toggle_start_b
 	mov state, #0x00
@@ -537,7 +539,7 @@ main:
 	lcall Init_All
 	lcall LCD_4BIT
 
-    mov 3s_timer, #0
+    mov timer_3s, #0
 	mov timer_secs, #0
 	mov timer_mins, #0 
 	mov state, #0
@@ -638,8 +640,9 @@ heating_loop_e:
 	subb a, x
 	setb TR2
 	jc heating_loop_g
-	; State changes here - turn on buzzer
-     mov 3s_timer, #0x03
+				; State changes here - turn on buzzer
+	setb TR0
+     mov timer_3s, #0x03
     setb soundflag
 	mov state_secs, #0x00
 	jb Second_heating, heating_loop_f
@@ -661,8 +664,9 @@ soaking_loop_b:
 	mov a, state_secs
 	xrl a, soak_time
 	jnz soaking_loop_c
-	; State changes here - turn on buzzer
-    mov 3s_timer, #0x03
+				; State changes here - turn on buzzer
+	setb TR0
+    mov timer_3s, #0x03
     setb soundflag
 	setb Second_heating
 	mov state, #0x01
@@ -680,8 +684,9 @@ reflow_loop_b:
 	mov a, state_secs
 	xrl a, reflow_time
 	jnz reflow_loop_c
-	; State changes here- turn on buzzer
-    mov 3s_timer, #0x03
+				; State changes here- turn on buzzer
+	setb TR0
+    mov timer_3s, #0x03
     setb soundflag
 	mov state, #0x04
 reflow_loop_c:
