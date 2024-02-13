@@ -407,7 +407,7 @@ convert_temp:
 cycle_param:
 	mov a, param
 	add a, #0x01
-	cjne a, #0x03, cycle_param_ret
+	cjne a, #0x04, cycle_param_ret
 	clr a
 cycle_param_ret:
 	mov param, a
@@ -484,6 +484,7 @@ param_up_ret:
 	ret
 
 toggle_start:
+	; State changes here - Turn on buzzer
 	mov a, state
 	jz toggle_start_b
 	mov state, #0x00
@@ -598,6 +599,7 @@ heating_loop_e:
 	subb a, x
 	setb TR2
 	jc heating_loop_g
+	; State changes here - turn on buzzer
 	mov state_secs, #0x00
 	jb Second_heating, heating_loop_f
 	mov state, #0x02
@@ -618,6 +620,7 @@ soaking_loop_b:
 	mov a, state_secs
 	xrl a, soak_time
 	jnz soaking_loop_c
+	; State changes here - turn on buzzer
 	setb Second_heating
 	mov state, #0x01
 soaking_loop_c:	
@@ -634,6 +637,7 @@ reflow_loop_b:
 	mov a, state_secs
 	xrl a, reflow_time
 	jnz reflow_loop_c
+	; State changes here- turn on buzzer
 	mov state, #0x04
 reflow_loop_c:
 	lcall Display_first_row
@@ -662,7 +666,7 @@ cooling_loop_b:
 	subb a, x
 	setb TR2
 	jnc cooling_loop_c
-	mov state, #0x00
+	lcall toggle_start
 cooling_loop_c:
 	lcall Display_first_row
 	lcall Display_second_row

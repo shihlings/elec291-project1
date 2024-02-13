@@ -503,7 +503,7 @@
 064E            407   cycle_param:
 064E E556       408            mov a, param
 0650 2401       409            add a, #0x01
-0652 B40301     410            cjne a, #0x03, cycle_param_ret
+0652 B40401     410            cjne a, #0x04, cycle_param_ret
 0655 E4         411            clr a
 0656            412   cycle_param_ret:
 0656 F556       413            mov param, a
