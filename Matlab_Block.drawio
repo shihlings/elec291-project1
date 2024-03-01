@@ -1,0 +1,147 @@
+<mxfile host="app.diagrams.net" modified="2024-02-29T23:27:23.222Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0" etag="dbBOM2ob6muJc1VzDmr3" version="24.0.0" type="device">
+  <diagram name="Page-1" id="NSwCtnFNLEtAnL3LdZNc">
+    <mxGraphModel dx="1434" dy="746" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-2" target="_OXYChIRy5-m-_-rCS6Q-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-2" target="_OXYChIRy5-m-_-rCS6Q-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-2" target="_OXYChIRy5-m-_-rCS6Q-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-2" target="_OXYChIRy5-m-_-rCS6Q-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-2" value="Binary Coded Decimal to uint32 Converter" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="415" y="430" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-3" target="_OXYChIRy5-m-_-rCS6Q-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-3" value="Binary (ASCII) to uint32 Converter" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="415" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="275" y="610" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="735" y="390" />
+              <mxPoint x="735" y="670" />
+              <mxPoint x="275" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-4" value="Update Soaking Temperature" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="585" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-5" target="_OXYChIRy5-m-_-rCS6Q-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-5" value="Clear and Reset Temperature Graph" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="215" y="310" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-7" target="_OXYChIRy5-m-_-rCS6Q-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-7" value="Open Selected Port" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="215" y="230" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-8">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="275" y="610" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="735" y="530" />
+              <mxPoint x="735" y="670" />
+              <mxPoint x="275" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-8" value="Update Reflow Temperature" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="585" y="500" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="275" y="610" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="735" y="600" />
+              <mxPoint x="735" y="670" />
+              <mxPoint x="275" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-9" value="Update Reflow Time" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="585" y="570" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-10">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="275" y="610" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="735" y="460" />
+              <mxPoint x="735" y="670" />
+              <mxPoint x="275" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-10" value="Update Soaking Time" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="585" y="430" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="275" y="610" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="735" y="320" />
+              <mxPoint x="735" y="670" />
+              <mxPoint x="275" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-11" value="Update Temperature Data Display and Graph" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="585" y="290" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-12" target="_OXYChIRy5-m-_-rCS6Q-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-12" value="Serial Port Selection" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="215" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-37" target="_OXYChIRy5-m-_-rCS6Q-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-37" target="_OXYChIRy5-m-_-rCS6Q-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-37" value="&lt;div&gt;Serial Port Data Input&lt;/div&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="215" y="390" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-39" target="_OXYChIRy5-m-_-rCS6Q-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-44" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="_OXYChIRy5-m-_-rCS6Q-40">
+          <mxGeometry x="-0.225" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_OXYChIRy5-m-_-rCS6Q-39" target="_OXYChIRy5-m-_-rCS6Q-12">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="570" />
+              <mxPoint x="160" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-46" value="&lt;div&gt;Yes&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="_OXYChIRy5-m-_-rCS6Q-45">
+          <mxGeometry x="-0.0019" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_OXYChIRy5-m-_-rCS6Q-39" value="Close Port?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="210" y="530" width="130" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
