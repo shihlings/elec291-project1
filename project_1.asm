@@ -1,60 +1,60 @@
-; 76E003 ADC test program: Reads channel 7 on P1.1, pin 14
-; This version uses an LED as voltage reference connected to pin 6 (P1.7/AIN0)
+				; 76E003 ADC test program: Reads channel 7 on P1.1, pin 14
+				; This version uses an LED as voltage reference connected to pin 6 (P1.7/AIN0)
 
-$NOLIST
-$MODN76E003
-$LIST
+	$NOLIST
+	$MODN76E003
+	$LIST
 
-;  N76E003 pinout:
-;                               -------
-;       PWM2/IC6/T0/AIN4/P0.5 -|1    20|- P0.4/AIN5/STADC/PWM3/IC3
-;               TXD/AIN3/P0.6 -|2    19|- P0.3/PWM5/IC5/AIN6
-;               RXD/AIN2/P0.7 -|3    18|- P0.2/ICPCK/OCDCK/RXD_1/[SCL]
-;                    RST/P2.0 -|4    17|- P0.1/PWM4/IC4/MISO
-;        INT0/OSCIN/AIN1/P3.0 -|5    16|- P0.0/PWM3/IC3/MOSI/T1
-;              INT1/AIN0/P1.7 -|6    15|- P1.0/PWM2/IC2/SPCLK
-;                         GND -|7    14|- P1.1/PWM1/IC1/AIN7/CLO
-;[SDA]/TXD_1/ICPDA/OCDDA/P1.6 -|8    13|- P1.2/PWM0/IC0
-;                         VDD -|9    12|- P1.3/SCL/[STADC]
-;            PWM5/IC7/SS/P1.5 -|10   11|- P1.4/SDA/FB/PWM1
-;                               -------
-;
+				;  N76E003 pinout:
+				;                               -------
+				;       PWM2/IC6/T0/AIN4/P0.5 -|1    20|- P0.4/AIN5/STADC/PWM3/IC3
+				;               TXD/AIN3/P0.6 -|2    19|- P0.3/PWM5/IC5/AIN6
+				;               RXD/AIN2/P0.7 -|3    18|- P0.2/ICPCK/OCDCK/RXD_1/[SCL]
+				;                    RST/P2.0 -|4    17|- P0.1/PWM4/IC4/MISO
+				;        INT0/OSCIN/AIN1/P3.0 -|5    16|- P0.0/PWM3/IC3/MOSI/T1
+				;              INT1/AIN0/P1.7 -|6    15|- P1.0/PWM2/IC2/SPCLK
+				;                         GND -|7    14|- P1.1/PWM1/IC1/AIN7/CLO
+				;[SDA]/TXD_1/ICPDA/OCDDA/P1.6 -|8    13|- P1.2/PWM0/IC0
+				;                         VDD -|9    12|- P1.3/SCL/[STADC]
+				;            PWM5/IC7/SS/P1.5 -|10   11|- P1.4/SDA/FB/PWM1
+				;                               -------
+				;
 
-CLK               EQU 16600000 ; Microcontroller system frequency in Hz
-BAUD              EQU 115200 ; Baud rate of UART in bps
-TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
+	CLK               EQU 16600000 ; Microcontroller system frequency in Hz
+	BAUD              EQU 115200 ; Baud rate of UART in bps
+	TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 	TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
-TIMER0_RATE EQU 4096
-TIMER0_RELOAD EQU ((65536-(CLK/(TIMER0_RATE))))
+	TIMER0_RATE EQU 4096
+	TIMER0_RELOAD EQU ((65536-(CLK/(TIMER0_RATE))))
 	TIMER2_RATE   EQU 100     ; 100Hz, for a timer tick of 10ms
-TIMER2_RELOAD EQU ((65536-(CLK/(TIMER2_RATE*16))))
+	TIMER2_RELOAD EQU ((65536-(CLK/(TIMER2_RATE*16))))
 
 
-ORG 0x0000
+	ORG 0x0000
 	ljmp main
-org 0x000B
-    ljmp Timer0_ISR
+	org 0x000B
+	ljmp Timer0_ISR
 
-ORG 0x002B
+	ORG 0x002B
 	ljmp Timer2_ISR
-		
-cseg
-; These 'equ' must match the hardware wiring
-LCD_RS equ P1.3
-LCD_E  equ P1.4
-LCD_D4 equ P0.0
-LCD_D5 equ P0.1
-LCD_D6 equ P0.2
+	
+	cseg
+				; These 'equ' must match the hardware wiring
+	LCD_RS equ P1.3
+	LCD_E  equ P1.4
+	LCD_D4 equ P0.0
+	LCD_D5 equ P0.1
+	LCD_D6 equ P0.2
 	LCD_D7 equ P0.3
 	PWM_OUT equ P1.0
 	SOUND_OUT equ P1.6
 
-$NOLIST
-$include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
-$LIST
+	$NOLIST
+	$include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
+	$LIST
 
-; These register definitions needed by 'math32.inc'
-DSEG at 30H
+				; These register definitions needed by 'math32.inc'
+	DSEG at 30H
 x:   ds 4
 x_backup:	ds 4
 y:   ds 4
@@ -63,7 +63,7 @@ bcd: ds 5
 bcd_backup:	ds 5
 VREF: ds 2
 
-; Soldering parameters
+				; Soldering parameters
 soak_temp:	ds 1
 soak_time:	ds 1
 reflow_temp:	ds 1
@@ -74,7 +74,7 @@ state_secs:	ds 1
 timer_secs:	ds 1
 timer_mins:	ds 1
 
-; 3s timer flag
+				; 3s timer flag
 timer_3s: ds 1
 
 pwm_counter:	ds 1
@@ -82,20 +82,20 @@ pwm:	ds 1
 	
 param:	ds 1 			; Determines which parameter is being edited, in the order above
 	
-BSEG
+	BSEG
 mf: dbit 1
 
 soundflag: dbit 1
 	
-; Buttons are active low
+				; Buttons are active low
 Select_button:	dbit 1
 Down_button:	dbit 1
 Up_button:	dbit 1
 Start_button:	dbit 1
 Second_heating:	dbit 1
 
-$NOLIST
-$include(math32.inc)
+	$NOLIST
+	$include(math32.inc)
 	$LIST
 
 Celsius_Unit_String:	db 0xDF, 'C ', 0
@@ -106,17 +106,17 @@ Reflow_State_String:	db 'RF ', 0
 Cooling_State_String:	db 'CL ', 0
 
 Timer0_ISR:
-    clr TR0
-    mov TH0, #high(TIMER0_RELOAD)    
-    mov TL0, #low(TIMER0_RELOAD)
-	cpl SOUND_OUT ; connect soundout to a pin pls
+	clr TR0
+	mov TH0, #high(TIMER0_RELOAD)    
+	mov TL0, #low(TIMER0_RELOAD)
+	cpl SOUND_OUT 
 	setb TR0
-    reti
+	reti
 
 Timer2_ISR:
 	clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
 	
-	; The two registers used in the ISR must be saved in the stack
+				; The two registers used in the ISR must be saved in the stack
 	push acc
 	push psw
 
@@ -171,7 +171,7 @@ Timer2_ISR_Done:
 	reti
 	
 Init_All:
-	; Configure all the pins for bidirectional I/O
+				; Configure all the pins for bidirectional I/O
 	mov	P3M1, #0x00
 	mov	P3M2, #0x00
 	mov	P1M1, #0x00
@@ -179,16 +179,16 @@ Init_All:
 	mov	P0M1, #0x00
 	mov	P0M2, #0x00
 	
-    orl CKCON, #0b00001000
-    mov a, TMOD
-    anl a, #0xf0
-    orl a, #0x01
-    mov TMOD, a
-    mov TH0, #high(TIMER0_RELOAD)
-    mov TL0, #low(TIMER0_RELOAD)
+	orl CKCON, #0b00001000
+	mov a, TMOD
+	anl a, #0xf0
+	orl a, #0x01
+	mov TMOD, a
+	mov TH0, #high(TIMER0_RELOAD)
+	mov TL0, #low(TIMER0_RELOAD)
 
-    setb ET0
-    clr TR0
+	setb ET0
+	clr TR0
 
 	orl	CKCON, #0x10 ; CLK is the input for timer 1
 	orl	PCON, #0x80 ; Bit SMOD=1, double baud rate
@@ -199,11 +199,11 @@ Init_All:
 	mov	TH1, #TIMER1_RELOAD ; TH1=TIMER1_RELOAD;
 	setb TR1
 	
-	; Using timer 0 for delay functions.  Initialize here:
-	;clr	TR0 ; Stop timer 0
-	;orl	CKCON,#0x08 ; CLK is the input for timer 0
-	;anl	TMOD,#0xF0 ; Clear the configuration bits for timer 0
-	;orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
+				; Using timer 0 for delay functions.  Initialize here:
+				;clr	TR0 ; Stop timer 0
+				;orl	CKCON,#0x08 ; CLK is the input for timer 0
+				;anl	TMOD,#0xF0 ; Clear the configuration bits for timer 0
+				;orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
 
 				; Using timer 2 for keeping time.
 	mov T2CON, #0
@@ -214,19 +214,19 @@ Init_All:
 	mov RCMP2H, #high(TIMER2_RELOAD)
 	mov RCMP2L, #low(TIMER2_RELOAD)
 	mov pwm_counter, #0
-	; Init two millisecond interrupt counter.
+				; Init two millisecond interrupt counter.
 	clr a
-	; Enable the timer and interrupts
+				; Enable the timer and interrupts
 	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
 	
-	; Initialize the pins used by the ADC (P1.1, P1.7) as input.
+				; Initialize the pins used by the ADC (P1.1, P1.7) as input.
 	orl	P1M1, #0b10000010
 	anl	P1M2, #0b01111101
 	
-	; Initialize and start the ADC:
+				; Initialize and start the ADC:
 	anl ADCCON0, #0xF0
 	orl ADCCON0, #0x07 ; Select channel 7
-	; AINDIDS select if some pins are analog inputs or digital I/O:
+				; AINDIDS select if some pins are analog inputs or digital I/O:
 	mov AINDIDS, #0x00 ; Disable all analog inputs
 	orl AINDIDS, #0b10000011 ; Activate AIN0 and AIN7 analog inputs
 	orl ADCCON1, #0x01 ; Enable ADC
@@ -245,21 +245,21 @@ wait_1ms:
 	ret
 
 putchar:
-    jnb TI, putchar
-    clr TI
-    mov SBUF, a
+	jnb TI, putchar
+	clr TI
+	mov SBUF, a
 	ret
 
-; Send a constant-zero-terminated string using the serial port
+				; Send a constant-zero-terminated string using the serial port
 SendString:
-    clr A
-    movc A, @A+DPTR
-    jz SendStringDone
-    lcall putchar
-    inc DPTR
-    sjmp SendString
+	clr A
+	movc A, @A+DPTR
+	jz SendStringDone
+	lcall putchar
+	inc DPTR
+	sjmp SendString
 SendStringDone:
-    ret
+	ret
 
 put_x:
 	mov a, x+3
@@ -286,7 +286,7 @@ put_x:
 	lcall putchar
 	ret
 
-; Wait the number of miliseconds in R2
+				; Wait the number of miliseconds in R2
 waitms:
 	lcall wait_1ms
 	djnz R2, waitms
@@ -369,8 +369,8 @@ push_BCD:
 	mov bcd_backup+4, bcd+4
 	ret
 	
-; We can display a number any way we want.  In this case with
-; four decimal places.
+				; We can display a number any way we want.  In this case with
+				; four decimal places.
 Display_first_row:
 	Set_Cursor(1, 1)
 	Display_BCD(bcd+2)
@@ -418,21 +418,21 @@ Display_second_row_b:
 Read_ADC:
 	clr ADCF
 	setb ADCS ;  ADC start trigger signal
-    jnb ADCF, $ ; Wait for conversion complete
-    
-    ; Read the ADC result and store in [R1, R0]
-    mov a, ADCRL
-    anl a, #0x0f
-    mov R0, a
-    mov a, ADCRH   
-    swap a
-    push acc
-    anl a, #0x0f
-    mov R1, a
-    pop acc
-    anl a, #0xf0
-    orl a, R0
-    mov R0, A	
+	jnb ADCF, $ ; Wait for conversion complete
+	
+				; Read the ADC result and store in [R1, R0]
+	mov a, ADCRL
+	anl a, #0x0f
+	mov R0, a
+	mov a, ADCRH   
+	swap a
+	push acc
+	anl a, #0x0f
+	mov R1, a
+	pop acc
+	anl a, #0xf0
+	orl a, R0
+	mov R0, A	
 	ret
 	
 convert_temp:
@@ -520,8 +520,8 @@ param_up_ret:
 	ret
 
 toggle_start:
-	; State changes here - Turn on buzzer
-    mov timer_3s, #0x03
+				; State changes here - Turn on buzzer
+	mov timer_3s, #0x03
 	setb soundflag
 	setb TR0
 	mov a, state
@@ -535,11 +535,11 @@ toggle_start_b:
 	
 main:
 	mov sp, #0x7f
-    
+	
 	lcall Init_All
 	lcall LCD_4BIT
 
-    mov timer_3s, #0
+	mov timer_3s, #0
 	mov timer_secs, #0
 	mov timer_mins, #0 
 	mov state, #0
@@ -642,8 +642,8 @@ heating_loop_e:
 	jc heating_loop_g
 				; State changes here - turn on buzzer
 	setb TR0
-     mov timer_3s, #0x03
-    setb soundflag
+	mov timer_3s, #0x03
+	setb soundflag
 	mov state_secs, #0x00
 	jb Second_heating, heating_loop_f
 	mov state, #0x02
@@ -666,8 +666,8 @@ soaking_loop_b:
 	jnz soaking_loop_c
 				; State changes here - turn on buzzer
 	setb TR0
-    mov timer_3s, #0x03
-    setb soundflag
+	mov timer_3s, #0x03
+	setb soundflag
 	setb Second_heating
 	mov state, #0x01
 soaking_loop_c:	
@@ -686,8 +686,8 @@ reflow_loop_b:
 	jnz reflow_loop_c
 				; State changes here- turn on buzzer
 	setb TR0
-    mov timer_3s, #0x03
-    setb soundflag
+	mov timer_3s, #0x03
+	setb soundflag
 	mov state, #0x04
 reflow_loop_c:
 	lcall Display_first_row
@@ -723,32 +723,32 @@ cooling_loop_c:
 	ljmp check_state
 	
 Read_Temp:
-	; Read the 4.096V voltage reference connected to AIN0 on pin 6
+				; Read the 4.096V voltage reference connected to AIN0 on pin 6
 	anl ADCCON0, #0xF0
 	orl ADCCON0, #0x00 ; Select channel 0
 
 	lcall Read_ADC
-	; Save result for later use
+				; Save result for later use
 	mov VREF+0, R0
 	mov VREF+1, R1
 
-	; Read the signal connected to AIN7
+				; Read the signal connected to AIN7
 	anl ADCCON0, #0xF0
 	orl ADCCON0, #0x07 ; Select channel 7
 	lcall Read_ADC
-    
-    ; Convert to voltage
+	
+				; Convert to voltage
 	mov x+0, R0
 	mov x+1, R1
-	; Pad other bits with zero
+				; Pad other bits with zero
 	mov x+2, #0
 	mov x+3, #0
 	Load_y(41132) ; The MEASURED reference voltage 4.1132V, with 4 decimal places
 	lcall mul32
-	; Retrive the ADC LED value
+				; Retrive the ADC reference value
 	mov y+0, VREF+0
 	mov y+1, VREF+1
-	; Pad other bits with zero
+				; Pad other bits with zero
 	mov y+2, #0
 	mov y+3, #0
 	lcall div32
@@ -791,11 +791,11 @@ Read_Temp:
 	mov y+3, cold_junc_temp+3
 	lcall add32
 
-	; Convert to BCD and display
+				; Convert to BCD and display
 	lcall hex2bcd
 
 	lcall put_x
 	lcall push_x
 	
 	ret
-END
+	END
